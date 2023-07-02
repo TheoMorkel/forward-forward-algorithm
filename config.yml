@@ -17,3 +17,4 @@ train:
   model_name: test.pt
 wandb:
   project: "First-implementation-of-FFA"
+  run_name: "test2"

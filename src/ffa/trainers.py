@@ -93,6 +93,8 @@ class GreedyTrainer:
 
         # Validation Evaluation
         if self.evaluate:
+            model.eval()
+
             test_accuracies = []
             for x, y in dataset.test:
                 x, y = x.to(device), y.to(device)
@@ -192,6 +194,8 @@ class NonGreedyTrainer:
 
         # Validation Evaluation
         if self.evaluate:
+            model.eval()
+
             test_accuracies = []
             for x, y in dataset.test:
                 x, y = x.to(device), y.to(device)

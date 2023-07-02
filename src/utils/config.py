@@ -20,6 +20,19 @@ class cli_config:
 
         return self.config
 
+    def save_config(self, config_path):
+        if config_path is None:
+            raise ValueError("Config path is None")
+        
+        if self.config_path == config_path and self.config is not None:
+            return self.config
+
+        with open(config_path, "w") as f:
+            yaml.dump(self.config, f)
+            self.config_path = config_path
+
+        return self.config
+
     def get_config(self):
         if self.config is None:
             raise ValueError("Config is None")
@@ -57,6 +70,31 @@ class cli_config:
             value = callback(value)
 
         return value
+
+    def set_value(self, keys, value):
+
+        if self.config is None:
+            print(f"[bold red]Config is None[/bold red]: {keys} {value}")
+            # raise ValueError("Config is None")
+
+        if isinstance(keys, str):
+            keys = keys.split(".")
+
+        if not isinstance(keys, list):
+            keys = list(keys)
+
+        conf = self.config
+        for key in keys:
+            if key not in conf:
+                conf[key] = {}
+            if isinstance(conf[key], dict):
+                conf = conf[key]
+            else:
+                conf[key] = value
+                break
+
+        conf[keys[-1]] = value
+
             
     def show_config(self, config: dict = None,tree: Tree = None, head=True):
         if config is None:

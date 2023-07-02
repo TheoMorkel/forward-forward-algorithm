@@ -17,84 +17,14 @@ from src.ffa.models import FFClassifier
 from src.datasets import MNIST
 from src.device import get_device
 from src.utils.config import cli_config
+from src.utils.cli_utils import cli_callbacks, cli_factories
+from src.utils.cli_utils import show_config, show_device
 
 defualt_config = cli_config()
+callback = cli_callbacks(defualt_config, train=False)
+factory = cli_factories(defualt_config)
 
 app = typer.Typer(add_completion=False)
-
-def show_config(config: dict):
-    print("[bold underline bright_blue]Params:[/bold underline bright_blue]")
-    for key, value in config.items():
-        print(f"[bright_blue]{key}:[/bright_blue] {value}")
-
-    print()
-
-def show_device(device: torch.device):
-    print(f"[bright_blue]Device:[/bright_blue] {device}")
-    print()
-
-def _config_callback(value: Path):
-    defualt_config.load_config(value)
-    return value
-
-def _dataset_callback(value: str):
-    if value not in ["MNIST"]:
-        raise typer.BadParameter("Dataset must be one of MNIST")
-    
-    if value == "MNIST":
-        return MNIST
-    else:
-        raise typer.BadParameter("Dataset must be one of MNIST")
-
-def _trainer_callback(value: str):
-    if value not in ["Greedy", "NonGreedy"]:
-        raise typer.BadParameter("Train Mode must be one of Greedy, NonGreedy")
-    
-    if value == "Greedy":
-        return GreedyTrainer
-    elif value == "NonGreedy":
-        return NonGreedyTrainer
-    else:
-        raise typer.BadParameter("Train Mode must be one of Greedy, NonGreedy")
-
-def _activation_callback(value: str):
-    if value not in ["relu", "leaky_relu", "sigmoid"]:
-        raise typer.BadParameter("Activation must be one of relu, tanh, sigmoid")
-
-    if value == "relu":
-        return torch.nn.ReLU()
-    elif value == "leaky_relu":
-        return torch.nn.LeakyReLU()
-    elif value == "sigmoid":
-        return torch.nn.Sigmoid()
-    else:
-        raise typer.BadParameter("Activation must be one of relu, tanh, sigmoid")
-
-def _optimizer_callback(value: str):
-    if value not in ["adam", "sgd"]:
-        raise typer.BadParameter("Optimizer must be one of adam, sgd")
-
-    if value == "adam":
-        return torch.optim.Adam
-    elif value == "sgd":
-        return torch.optim.SGD
-    else:
-        raise typer.BadParameter("Optimizer must be one of adam, sgd")
-
-def _dataset_factory():
-    return defualt_config.get_value("train.dataset", "MNIST")
-
-def _batch_size_factory():
-    return defualt_config.get_value("train.batch_size", 512)
-    
-def _seed_factory():
-    return defualt_config.get_value("train.seed", 1)
-
-def _model_path_factory():
-    return defualt_config.get_value("train.model_path", "./models")
-
-def _model_name_factory():
-    return defualt_config.get_value("train.model_name", "model.pt")
 
 def visualize_weights(model: FFFNN):
     num_layers = len(model.layers)
@@ -126,35 +56,29 @@ def visualize_weights(model: FFFNN):
 
 @app.command()
 def visualize(
-    config: Path = typer.Option(default="config.yml", help="Path to config file", rich_help_panel="Settings", exists=True, resolve_path=True, callback=_config_callback),
+    model_path: Path = typer.Option(default_factory=factory._model_path_factory, help="Path of the runs", rich_help_panel="Settings", exists=True, resolve_path=True, callback=callback._model_path_test_callback, is_eager=True),
+    run_name: str = typer.Option(default=factory._run_name_factory, help="Run name", rich_help_panel="Settings", callback=callback._run_name_test_calback),
+    model_name: str = typer.Option(default_factory=factory._model_name_factory, help="Model name", rich_help_panel="Settings"),
 
-    dataset: str = typer.Option(default_factory=_dataset_factory, help="Dataset", rich_help_panel="Parameters", callback=_dataset_callback),
-    batch_size: int = typer.Option(default_factory=_batch_size_factory, help="Batch Size", rich_help_panel="Parameters"),
-
-    seed: int = typer.Option(default_factory=_seed_factory, help="Seed", rich_help_panel="Parameters"), 
-
-    model_path: Path = typer.Option(default_factory=_model_path_factory, help="Path to save model", rich_help_panel="Settings", exists=False, resolve_path=True),
-    model_name: str = typer.Option(default_factory=_model_name_factory, help="Model name", rich_help_panel="Settings"),
+    dataset: str = typer.Option(default_factory=factory._dataset_factory, help="Dataset", rich_help_panel="Parameters", callback=callback._dataset_callback),
+    batch_size: int = typer.Option(default_factory=factory._batch_size_factory, help="Batch Size", rich_help_panel="Parameters"),
+    seed: int = typer.Option(default_factory=factory._seed_factory, help="Seed", rich_help_panel="Parameters"), 
 ):
     device = get_device()
-
-    if defualt_config.config is None:
-        defualt_config.load_config(config)
     
-    config = defualt_config.config
-
     parameters = {
         "dataset": dataset,
-        "trainer": defualt_config.get_value("train.trainer", callback=_trainer_callback),
+        "trainer": defualt_config.get_value("train.trainer", callback=callback._trainer_callback),
         "input_dim": defualt_config.get_value("train.input_dim"),
         "hidden_layers": defualt_config.get_value("train.hidden_layers"),
         "hidden_units": defualt_config.get_value("train.hidden_units"),
-        "activation": defualt_config.get_value("train.activation", callback=_activation_callback),
+        "activation": defualt_config.get_value("train.activation", callback=callback._activation_callback),
         "dropout": defualt_config.get_value("train.dropout"),
         "threshold": defualt_config.get_value("train.threshold"),
-        "optimizer": defualt_config.get_value("train.optimizer", callback=_optimizer_callback),
+        "optimizer": defualt_config.get_value("train.optimizer", callback=callback._optimizer_callback),
         "epochs": defualt_config.get_value("train.epochs"),
         "learning_rate": defualt_config.get_value("train.learning_rate"),
+        "goodness": defualt_config.get_value("train.goodness", callback=callback._goodness_callback),
         "batch_size": batch_size,
         "seed": seed
     }
@@ -166,22 +90,21 @@ def visualize(
     if seed is not None:
         torch.random.manual_seed(seed)
 
-    # wandb.init(project=config['wandb']['project'], config=parameters, mode="online" if use_wandb else "disabled")
-
     dataset = dataset(batch_size=batch_size, shuffle=True)
 
     model = FFClassifier(
         in_features=defualt_config.get_value("train.input_dim"), 
         hidden_layers=defualt_config.get_value("train.hidden_layers"), 
         hidden_units=defualt_config.get_value("train.hidden_units"), 
-        activation=defualt_config.get_value("train.activation", callback=_activation_callback), 
+        activation=defualt_config.get_value("train.activation", callback=callback._activation_callback), 
         dropout=defualt_config.get_value("train.dropout"),
         threshold=defualt_config.get_value("train.threshold"), 
-        optimiser=defualt_config.get_value("train.optimizer", callback=_optimizer_callback), 
-        learning_rate=defualt_config.get_value("train.learning_rate")
+        optimiser=defualt_config.get_value("train.optimizer", callback=callback._optimizer_callback), 
+        learning_rate=defualt_config.get_value("train.learning_rate"),
+        goodness=defualt_config.get_value("train.goodness", callback=callback._goodness_callback)
         )
 
-    weights = torch.load(Path(model_path, model_name))
+    weights = torch.load(Path(model_path, run_name, model_name))
     model.load_state_dict(weights)
 
     print("[bright_blue]Visualizing...[/bright_blue]")

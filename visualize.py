@@ -57,8 +57,7 @@ def visualize_weights(model: FFFNN):
 @app.command()
 def visualize(
     model_path: Path = typer.Option(default_factory=factory._model_path_factory, help="Path of the runs", rich_help_panel="Settings", exists=True, resolve_path=True, callback=callback._model_path_test_callback, is_eager=True),
-    run_name: str = typer.Option(default=factory._run_name_factory, help="Run name", rich_help_panel="Settings", callback=callback._run_name_test_calback),
-    model_name: str = typer.Option(default_factory=factory._model_name_factory, help="Model name", rich_help_panel="Settings"),
+    run_name: str = typer.Option(default=factory._run_name_factory, help="Run name", rich_help_panel="Settings", callback=callback._run_name_test_callback),
 
     dataset: str = typer.Option(default_factory=factory._dataset_factory, help="Dataset", rich_help_panel="Parameters", callback=callback._dataset_callback),
     batch_size: int = typer.Option(default_factory=factory._batch_size_factory, help="Batch Size", rich_help_panel="Parameters"),
@@ -104,7 +103,7 @@ def visualize(
         goodness=defualt_config.get_value("train.goodness", callback=callback._goodness_callback)
         )
 
-    weights = torch.load(Path(model_path, run_name, model_name))
+    weights = torch.load(Path(model_path, run_name, "model.pt"))
     model.load_state_dict(weights)
 
     print("[bright_blue]Visualizing...[/bright_blue]")

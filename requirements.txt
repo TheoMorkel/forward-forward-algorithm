@@ -37,11 +37,11 @@ shellingham==1.5.0.post1
 six==1.16.0
 smmap==5.0.0
 sympy==1.11.1
-torch==2.0.1+cu117
 torchaudio==2.0.2+cu117
 torchvision==0.15.2+cu117
 tqdm==4.65.0
 typer==0.9.0
 typing_extensions==4.4.0
+torch==2.0.1+cu117
 urllib3==2.0.3
 wandb==0.15.4

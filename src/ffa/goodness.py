@@ -22,3 +22,15 @@ class Sum:
 
     def __str__(self) -> str:
         return "Sum"
+
+
+class RootMeanSquare:
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def __call__(self, x: torch.Tensor):
+        return torch.sqrt(torch.sum(torch.pow(x-torch.mean(x),2), dim=1))/torch.numel(x)
+    
+    def __str__(self) -> str:
+        return "RootMeanSquare"

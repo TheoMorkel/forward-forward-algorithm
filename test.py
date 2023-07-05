@@ -26,8 +26,7 @@ app = typer.Typer(add_completion=False)
 @app.command()
 def test(
     model_path: Path = typer.Option(default_factory=factory._model_path_factory, help="Path of the runs", rich_help_panel="Settings", exists=True, resolve_path=True, callback=callback._model_path_test_callback),
-    run_name: str = typer.Option(default=factory._run_name_factory, help="Run name", rich_help_panel="Settings", callback=callback._run_name_test_calback),
-    model_name: str = typer.Option(default_factory=factory._model_name_factory, help="Model name", rich_help_panel="Settings"),
+    run_name: str = typer.Option(default=factory._run_name_factory, help="Run name", rich_help_panel="Settings", callback=callback._run_name_test_callback),
 
     use_wandb: bool = typer.Option(default=False, help="Use wandb", rich_help_panel="Settings"),
 
@@ -82,7 +81,7 @@ def test(
         )
 
 
-    weights = torch.load(Path(model_path, run_name, model_name))
+    weights = torch.load(Path(model_path, run_name, "model.pt"))
     model.load_state_dict(weights)
 
     print("[bright_blue]Testing...[/bright_blue]")

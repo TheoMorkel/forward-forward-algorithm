@@ -106,9 +106,6 @@ class GreedyTrainer:
             print(
                 f"test accuracy: {mean_test_accuracy*100:.2f}%, test error: {(1.0 - mean_test_accuracy)*100:.2f}%"
             )
-            metrics['test/error'] = mean_test_err
-            metrics['test/step'] = 1
-            wandb.log(metrics)
             wandb.run.summary["test_error"] = mean_test_err
             wandb.run.summary["test_accuracy"] = mean_test_accuracy
 
@@ -207,9 +204,6 @@ class NonGreedyTrainer:
             print(
                 f"test accuracy: {mean_test_accuracy*100:.2f}%, test error: {(1.0 - mean_test_accuracy)*100:.2f}%"
             )
-            metrics['test/error'] = mean_test_err
-            metrics['test/step'] = 1
-            wandb.log(metrics)
             wandb.run.summary["test_error"] = mean_test_err
             wandb.run.summary["test_accuracy"] = mean_test_accuracy
 

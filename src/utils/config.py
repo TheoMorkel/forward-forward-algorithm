@@ -58,6 +58,8 @@ class cli_config:
 
             if isinstance(conf[key], dict):
                 conf = conf[key]
+            elif isinstance(conf[key], list):
+                conf = conf[key]
             else:
                 value = conf[key]
                 break
@@ -75,6 +77,7 @@ class cli_config:
 
         if self.config is None:
             print(f"[bold red]Config is None[/bold red]: {keys} {value}")
+            self.config = {}
             # raise ValueError("Config is None")
 
         if isinstance(keys, str):

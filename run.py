@@ -20,36 +20,50 @@ defualt_config = cli_config()
 callback = cli_callbacks(defualt_config)
 factory = cli_factories(defualt_config)
 
-app = typer.Typer(add_completion=False, rich_markup_mode="rich")
 
-@app.command()
-def train(
-    config: Path = typer.Option(default="config.yml", help="Path to config file", rich_help_panel="Settings", exists=True, resolve_path=True, callback=callback._config_callback, is_eager=True),
-    evaluate: bool = typer.Option(default=True, help="Evaluate", rich_help_panel="Settings"),
-    use_wandb: bool = typer.Option(default=True, help="Use wandb", rich_help_panel="Settings"),
+def run(
+    config = "config.yml",
+    dataset = "MNIST",
+    batch_size = 1024,
 
-    dataset: str = typer.Option(default_factory=factory._dataset_factory, help="Dataset", rich_help_panel="Parameters", callback=callback._dataset_callback),
-    batch_size: int = typer.Option(default_factory=factory._batch_size_factory, help="Batch Size", rich_help_panel="Parameters", callback=callback._batch_size_callback),
+    trainer = "Greedy",
+    activation = "relu",
+    optimizer = "adam",
+    input_dim = 784,
+    hidden_layers = 4,
+    hidden_units = 784,
+    dropout = 0.2,
+    threshold = 0.5,
+    epochs = 10,
+    learning_rate = 0.001,
+    goodness = "SumSquared",
+    seed = 1,
 
-    trainer: str = typer.Option(default_factory=factory._trainer_factory, help="Greedy or NonGreedy", rich_help_panel="Parameters", callback=callback._trainer_callback),
-    activation: str = typer.Option(default_factory=factory._activation_factory, help="Activation function", rich_help_panel="Parameters", callback=callback._activation_callback),
-    optimizer: str = typer.Option(default_factory=factory._optimizer_factory, help="Optimizer", rich_help_panel="Parameters", callback=callback._optimizer_callback),
-    input_dim: int = typer.Option(default_factory=factory._input_dim_factory, help="Input dimension", rich_help_panel="Parameters", callback=callback._input_dim_callback),
-    hidden_layers: int = typer.Option(default_factory=factory._hidden_layers_factory, help="Hidden Layers", rich_help_panel="Parameters", callback=callback._hidden_layers_callback),
-    hidden_units: int = typer.Option(default_factory=factory._hidden_units_factory, help="Hidden Units", rich_help_panel="Parameters", callback=callback._hidden_units_callback),
-    dropout: float = typer.Option(default_factory=factory._dropout_factory, help="Dropout", rich_help_panel="Parameters", callback=callback._dropout_callback),
-    threshold: float = typer.Option(default_factory=factory._threshold_factory, help="Threshold", rich_help_panel="Parameters", callback=callback._threshold_callback),
-    epochs: int = typer.Option(default_factory=factory._epochs_factory,  help="Epochs", rich_help_panel="Parameters", callback=callback._epochs_callback),
-    learning_rate: float = typer.Option(default_factory=factory._learning_rate_factory, help="Learning Rate", rich_help_panel="Parameters", callback=callback._learning_rate_callback),
-    goodness: str = typer.Option(default_factory=factory._goodness_factory, help="Goodness Function", rich_help_panel="Parameters", callback=callback._goodness_callback),
+    model_path = "./models",
+    run_name = "run",
     
-    seed: int = typer.Option(default_factory=factory._seed_factory, help="Seed", rich_help_panel="Parameters", callback=callback._seed_callback),
+    wandb_project = "FFA",
+):
 
-    model_path: Path = typer.Option(default_factory=factory._model_path_factory, help="Path to save model", rich_help_panel="Settings", exists=False, resolve_path=True),
-    run_name: str = typer.Option(default=factory._run_name_factory, help="Run name", rich_help_panel="Settings", callback=callback._run_name_callback),
+    config = callback._config_callback(config)
+    dataset = callback._dataset_callback(dataset)
+    batch_size = callback._batch_size_callback(batch_size)
 
-    wandb_project: str = typer.Option(default_factory=factory._wandb_project_factory, help="Wandb project name", rich_help_panel="Settings"),
-):  
+    trainer = callback._trainer_callback(trainer)
+    activation = callback._activation_callback(activation)
+    optimizer = callback._optimizer_callback(optimizer)
+    input_dim = callback._input_dim_callback(input_dim)
+    hidden_layers = callback._hidden_layers_callback(hidden_layers)
+    hidden_units = callback._hidden_units_callback(hidden_units)
+    dropout = callback._dropout_callback(dropout)
+    threshold = callback._threshold_callback(threshold)
+    epochs = callback._epochs_callback(epochs)
+    learning_rate = callback._learning_rate_callback(learning_rate)
+    goodness = callback._goodness_callback(goodness)
+    seed = callback._seed_callback(seed)
+    
+    model_path = "./models",
+    run_name = callback._run_name_callback("run"),
     device = get_device()
 
     if defualt_config.config is None:
@@ -74,13 +88,15 @@ def train(
         "seed": seed
     }
 
+    
+
     show_config(parameters)
     show_device(device)
 
     if seed is not None:
         torch.random.manual_seed(seed)
 
-    wandb.init(project=wandb_project, config=parameters, mode="online" if use_wandb else "offline")
+    wandb.init(project=wandb_project, config=parameters, mode="online")
 
     wandb.define_metric("train/step")
     wandb.define_metric("train/*", step_metric="train/step")
@@ -109,7 +125,7 @@ def train(
         goodness=goodness
         )
 
-    trainer = trainer(epochs=epochs, save_to="models", evaluate=evaluate)
+    trainer = trainer(epochs=epochs, save_to="models", evaluate=True)
     dataset = dataset(batch_size=batch_size, shuffle=True)
 
     print("[bright_blue]Training...[/bright_blue]")
@@ -146,6 +162,3 @@ def train(
 
     print("[bright_blue]Done![/bright_blue]")
     wandb.finish(exit_code=0)
-
-if __name__ == "__main__":
-    app()

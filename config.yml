@@ -1,20 +1,19 @@
 train:
-  dataset: MNIST
-  batch_size: 1024
-  trainer: Greedy
   activation: leaky_relu
-  optimizer: adam
-  input_dim: 784
-  hidden_layers: 5
-  hidden_units: 2000
+  batch_size: 1024
+  dataset: MNIST
   dropout: 0.1
-  threshold: 1
   epochs: 10
+  goodness: RootMeanSquare
+  hidden_layers: 4
+  hidden_units: 784
+  input_dim: 784
   learning_rate: 0.003
-  goodness: Sum
-  seed: 1
   model_path: ./models
-  model_name: test.pt
+  optimizer: adam
+  seed: 1
+  threshold: 1.0
+  trainer: Greedy
 wandb:
-  project: "First-implementation-of-FFA"
-  run_name: "test2"
+  project: First-implementation-of-FFA
+  run_name: test_3

@@ -5,9 +5,10 @@ from rich import print
 import os
 
 from src.ffa.trainers import GreedyTrainer, NonGreedyTrainer
-from src.ffa.goodness import SumSquared, Sum
+from src.ffa.goodness import SumSquared, Sum, RootMeanSquare
 from src.datasets import MNIST
 from src.utils.config import cli_config
+from src.utils.utils import validate_run_info, load_info_file
 
 
 def show_config(config: dict):
@@ -65,7 +66,7 @@ class cli_callbacks:
     def _activation_callback(self, value: str):
         if value not in ["relu", "leaky_relu", "sigmoid"]:
             raise typer.BadParameter("Activation must be one of relu, tanh, sigmoid")
-        
+
         self.defualt_config.set_value("train.activation", value)
         if value == "relu":
             return torch.nn.ReLU()
@@ -131,7 +132,7 @@ class cli_callbacks:
         return value
 
     def _goodness_callback(self, value: str):
-        if value not in ["SumSquared", "Sum"]:
+        if value not in ["SumSquared", "Sum", "RootMeanSquare"]:
             raise typer.BadParameter("Goodness must be one of SumSquared, Sum")
 
         self.defualt_config.set_value("train.goodness", value)
@@ -139,6 +140,8 @@ class cli_callbacks:
             return SumSquared()
         elif value == "Sum":
             return Sum()
+        elif value == "RootMeanSquare":
+            return RootMeanSquare()
         else:
             raise typer.BadParameter("Goodness must be one of SumSquared, Sum")
 
@@ -167,31 +170,29 @@ class cli_callbacks:
             raise typer.BadParameter("Path must contain folders of the runs")
 
 
-    def _run_name_test_calback(self, value: str):
-        print(self.path, value)
+    def _run_name_test_callback(self, value: str):
         if self.path is None:
             raise typer.BadParameter("Path must contain folders of the runs")
         else:
             runs = []
             folders = [file for file in self.path.iterdir() if file.is_dir()]
             for f in folders:
-                
-                model_files = [file for file in f.iterdir() if (file.suffix == ".pt")]
-                config_files = [file for file in f.iterdir() if (file.suffix == ".yml" or file.suffix == ".yaml")]
-                if len(model_files) == 1 and len(config_files) == 1:
-                    runs.append({"model": model_files[0], "config": config_files[0], "path": f, "name": f.parts[-1]})
-            
-            if len(runs) == 0:
-                raise typer.BadParameter("No runs found in the path")
+                if validate_run_info(f):
+                    info = load_info_file(f)
+                    runs.append(info)
 
-            for r in runs:
-                print(r["name"], value)
-                if r["name"] == value:
-                    self.run_name = value
-                    self._config_callback(r["config"])
-                    return value
-            else:
-                raise typer.BadParameter("Run name not found in the path")
+                    if info["run_name"] == value:
+                        self._config_callback(Path(f, info["config"]["name"]))
+                        return value
+
+            if len(runs) > 0:
+                typer.echo("Run Name must be one of the following:")
+                for run in runs:
+                    typer.echo(run["run_name"])
+                raise typer.Exit()
+
+                
+                
                 
 
 
